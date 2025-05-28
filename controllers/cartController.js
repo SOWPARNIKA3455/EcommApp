@@ -3,7 +3,7 @@ const Product = require('../models/Product');
 
 
 
-// @desc Add to cart
+// Add to cart
 const addToCart = async (req, res) => {
   const { productId, quantity } = req.body;
 
@@ -23,10 +23,9 @@ const addToCart = async (req, res) => {
 
   await cart.save();
 
-  // Populate the product in the newly added/updated item
+  
   await cart.populate(`items.${itemIndex > -1 ? itemIndex : cart.items.length - 1}.product`);
 
-  // Send only the updated item back
   const updatedItem = itemIndex > -1 ? cart.items[itemIndex] : cart.items[cart.items.length - 1];
 
   res.status(200).json({
@@ -69,7 +68,7 @@ const getCart = async (req, res) => {
 
 
 
-// @desc Update cart item
+// Update cart item
 const updateCartItem = async (req, res) => {
   try {
     const { productId, quantity } = req.body;
@@ -104,7 +103,7 @@ const updateCartItem = async (req, res) => {
   }
 };
 
-// @desc Remove item
+// Remove item
 const removeCartItem = async (req, res) => {
   try {
     const { productId } = req.params;
@@ -140,7 +139,7 @@ const removeCartItem = async (req, res) => {
   }
 };
 
-// @desc Clear cart
+// Clear cart
 const clearCart = async (req, res) => {
   try {
     const cart = await Cart.findOne({ user: req.user._id });

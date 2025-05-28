@@ -22,22 +22,16 @@ const {
 } = require('../controllers/sellerController');
 const upload = require('../middleware/multer');
 
-// Public routes
+
 sellerRouter.post('/create', authUser, createSellerProfile);
 sellerRouter.post('/login', sellerLogin);
 sellerRouter.get('/logout', sellerLogout);
-
-// Routes that require seller authentication
 sellerRouter.use(authSeller);
 
 sellerRouter.get('/profile', authSeller,SellerProfile);
 sellerRouter.patch('/update', authSeller,updateSeller);
 sellerRouter.get('/check-role',authSeller, checkSellerRole);
 sellerRouter.delete('/delete/:userId',authAdmin,deleteSeller)
-// Check role (user)
-
-
-
 
 sellerRouter.post('/product',authSeller,upload.single('image'), addProduct);
 sellerRouter.get('/products', getMyProducts);

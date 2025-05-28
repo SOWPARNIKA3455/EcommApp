@@ -12,9 +12,6 @@ const authUser = require('../middleware/authUser');
 const upload = require('../middleware/multer');
 const authMiddleware = require('../middleware/authMiddleware');
 
-
-
-// Routes
 productRouter.get('/', getAllProducts);
 productRouter.get('/:productId', getProductById);
 productRouter.patch('/:productId', authUser, upload.array('images'), updateProduct);

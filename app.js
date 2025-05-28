@@ -21,7 +21,6 @@ app.get('/', (req, res) => {
 
 app.use('/api', router);
 
-// ✅ Start only after DB is connected
 connectDB().then(() => {
   app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);

@@ -2,7 +2,7 @@ const Review = require('../models/Review');
 const Product = require('../models/Product');
 
 // Add a review
-exports.addReview = async (req, res) => {
+const addReview = async (req, res) => {
   try {
     const { product, user, rating, comment } = req.body;
 
@@ -34,7 +34,7 @@ exports.addReview = async (req, res) => {
 };
 
 // Get all reviews for a product
-exports.getProductReviews = async (req, res) => {
+const getProductReviews = async (req, res) => {
   try {
     const reviews = await Review.find({ product: req.params.productId }).populate('user', 'name');
     res.json({ message: 'Reviews fetched successfully', reviews });
@@ -44,7 +44,7 @@ exports.getProductReviews = async (req, res) => {
 };
 
 // Update a review
-exports.updateReview = async (req, res) => {
+const updateReview = async (req, res) => {
   try {
     const { rating, comment } = req.body;
     const review = await Review.findById(req.params.id);
@@ -72,7 +72,7 @@ exports.updateReview = async (req, res) => {
 };
 
 // Delete a review
-exports.deleteReview = async (req, res) => {
+const deleteReview = async (req, res) => {
   try {
     const review = await Review.findByIdAndDelete(req.params.id);
 
@@ -95,3 +95,4 @@ exports.deleteReview = async (req, res) => {
     res.status(500).json({ message: 'Failed to delete review', error: err.message });
   }
 };
+module.exports= {addReview,updateReview,getProductReviews,deleteReview}

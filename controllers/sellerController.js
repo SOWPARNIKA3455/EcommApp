@@ -295,7 +295,7 @@ const deleteProduct = async (req, res) => {
 };
 const getOrders = async (req, res) => {
   try {
-    // Fetch all orders and populate product data
+    
     const orders = await Order.find()
       .populate({
         path: 'items.product',
@@ -303,7 +303,7 @@ const getOrders = async (req, res) => {
         select: 'title sellerId',
       });
 
-    // Filter orders where at least one item belongs to the seller
+  
     const sellerOrders = orders.filter(order =>
       order.items.some(item =>
   item.product?.sellerId?.toString() === req.user._id.toString()

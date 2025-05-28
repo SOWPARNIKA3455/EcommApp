@@ -1,7 +1,8 @@
 const Order = require('../models/Order');
+const { updateOrderStatus } = require('./adminController');
 
 // Create a new order
-exports.placeOrder = async (req, res) => {
+const placeOrder = async (req, res) => {
   try {
     const {
       user,
@@ -30,7 +31,7 @@ exports.placeOrder = async (req, res) => {
 };
 
 
-exports.getUserOrders = async (req, res) => {
+const getUserOrders = async (req, res) => {
   try {
     const userId = req.params.userId;
     const orders = await Order.find({ user: userId }).populate('items.product', 'name price');
@@ -44,7 +45,7 @@ exports.getUserOrders = async (req, res) => {
   }
 };
 // Admin: Get all orders
-exports.getAllOrders = async (req, res) => {
+const getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find()
       .populate('user', 'name email')
@@ -61,7 +62,7 @@ exports.getAllOrders = async (req, res) => {
 
 
 // Update delivery status
-exports.markAsDelivered = async (req, res) => {
+const markAsDelivered = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
 
@@ -78,7 +79,7 @@ exports.markAsDelivered = async (req, res) => {
 };
 
 // Delete an order by ID
-exports.deleteOrder = async (req, res) => {
+const deleteOrder = async (req, res) => {
   try {
     const order = await Order.findByIdAndDelete(req.params.id);
 
@@ -91,3 +92,4 @@ exports.deleteOrder = async (req, res) => {
     res.status(500).json({ message: 'Failed to delete order', error: error.message });
   }
 };
+module.exports ={placeOrder,getAllOrders,getUserOrders,markAsDelivered,deleteOrder}

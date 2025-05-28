@@ -75,7 +75,7 @@ const getProductById = async (req, res) => {
   }
 };
 
-// Update Product - Admin or Seller (owns it)
+// Update Product - Admin or Seller
 const updateProduct = async (req, res) => {
   try {
     const { productId } = req.params;
@@ -100,7 +100,7 @@ const updateProduct = async (req, res) => {
   }
 };
 
-// Delete Product - Admin or Seller (owns it)
+// Delete Product - Admin or Seller
 const deleteProduct = async (req, res) => {
   try {
     const { productId } = req.params;
