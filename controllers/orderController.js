@@ -10,7 +10,11 @@ const placeOrder = async (req, res) => {
       shippingAddress,
       paymentMethod,
       totalPrice,
+      paymentId,
     } = req.body;
+    if(!paymentId){
+      return res.status(400).json({ message:"payment not completed"});
+    }
 
     const newOrder = new Order({
       user,
