@@ -9,7 +9,7 @@ const protect = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
     const user = await User.findById(decoded.id).select('-password');
     if (!user) {
@@ -22,12 +22,6 @@ const protect = async (req, res, next) => {
     console.error('Auth error:', err.message);
     return res.status(401).json({ message: 'Not authorized, token failed' });
   }
-};
-module.exports = (req, res, next) => {
-  if (req.user && (req.user.role === 'seller' || req.user.role === 'admin')) {
-    return next();
-  }
-  return res.status(403).json({ error: 'Access denied. Seller or Admin only.' });
 };
 
 

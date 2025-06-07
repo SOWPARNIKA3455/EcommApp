@@ -1,9 +1,10 @@
 const express = require('express');
 const reviewRouter = express.Router();
+const { protect } = require('../middleware/authMiddleware');
 const reviewController = require('../controllers/reviewController');
 
 // Add review
-reviewRouter.post('/', reviewController.addReview);
+reviewRouter.post('/',protect, reviewController.addReview);
 
 // Get all reviews for a product
 reviewRouter.get('/product/:productId', reviewController.getProductReviews);

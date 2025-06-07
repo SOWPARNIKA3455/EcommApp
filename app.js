@@ -11,6 +11,9 @@ const cookieParser = require('cookie-parser');
 console.log('Cloud name:', process.env.CLOUD_NAME);
 console.log('API key:', process.env.CLOUD_API_KEY);
 console.log('API secret:', process.env.CLOUD_API_SECRET);
+console.log('JWT_SECRET :', process.env.JWT_SECRET_KEY);
+
+
 
 app.use(express.json());
 app.use(cookieParser());

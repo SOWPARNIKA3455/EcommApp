@@ -8,7 +8,7 @@ const cartRouter = require('./cartRoutes');
 const reviewRouter = require('./reviewRoutes');
 const adminRouter= require('./adminRoutes');
 const sellerRouter = require('./sellerRoutes');
-const paymentRouter = require('./paymentRoutes');
+
 //api/user
 router.use('/user', userRouter);  
 //api/products       
@@ -23,7 +23,7 @@ router.use('/reviews', reviewRouter);
 router.use('/admin',adminRouter);  
 
 router.use('/seller',sellerRouter);
-router.use('/payment',paymentRouter);
+
 
 module.exports = router;
 
