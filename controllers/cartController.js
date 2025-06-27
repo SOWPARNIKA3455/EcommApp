@@ -46,11 +46,20 @@ const getCart = async (req, res) => {
       });
     }
 
-    const cartProducts = cart.items.map(item => ({
-      product: item.product,
-      quantity: item.quantity,
-      subTotal: item.quantity * (item.product.price || 0)
-    }));
+    const cartProducts = cart.items.map(item => {
+      const product = item.product;
+
+      return {
+        product: {
+          _id: product._id,
+          title: product.title || 'Unnamed',
+          price: product.price || 0,
+          imageUrl: product.imageUrl || ''
+        },
+        quantity: item.quantity,
+        subTotal: item.quantity * (product.price || 0)
+      };
+    });
 
     const totalQuantity = cartProducts.reduce((sum, item) => sum + item.quantity, 0);
     const totalAmount = cartProducts.reduce((sum, item) => sum + item.subTotal, 0);
@@ -66,9 +75,6 @@ const getCart = async (req, res) => {
   }
 };
 
-
-
-// Update cart item
 const updateCartItem = async (req, res) => {
   try {
     const { productId, quantity } = req.body;
@@ -88,14 +94,27 @@ const updateCartItem = async (req, res) => {
 
     await cart.populate('items.product');
 
-    const totalQuantity = cart.items.reduce((sum, i) => sum + i.quantity, 0);
-    const totalAmount = cart.items.reduce((sum, i) => sum + i.quantity * i.product.price, 0);
+    const cartProducts = cart.items.map(item => {
+      const product = item.product;
+      return {
+        product: {
+          _id: product._id,
+          name: product.title || 'Unnamed',
+          price: product.price || 0,
+          imageUrl: product.imageUrl || ''
+        },
+        quantity: item.quantity,
+        subTotal: item.quantity * (product.price || 0)
+      };
+    });
+
+    const totalQuantity = cartProducts.reduce((sum, item) => sum + item.quantity, 0);
+    const totalAmount = cartProducts.reduce((sum, item) => sum + item.subTotal, 0);
 
     res.json({
-      user: cart.user,
-      items: cart.items,
+      cartProducts,
       totalQuantity,
-      totalAmount
+      totalAmount,
     });
   } catch (error) {
     console.error("Update Cart Error:", error);
@@ -103,7 +122,10 @@ const updateCartItem = async (req, res) => {
   }
 };
 
-// Remove item
+
+
+
+
 const removeCartItem = async (req, res) => {
   try {
     const { productId } = req.params;
@@ -124,20 +146,28 @@ const removeCartItem = async (req, res) => {
 
     await cart.populate('items.product');
 
-    const totalQuantity = cart.items.reduce((sum, i) => sum + i.quantity, 0);
-    const totalAmount = cart.items.reduce((sum, i) => sum + i.quantity * i.product.price, 0);
+    const cartProducts = cart.items.map(item => ({
+      product: {
+        _id: item.product._id,
+        name: item.product.title || 'Unnamed',
+        price: item.product.price || 0,
+        imageUrl: item.product.imageUrl || ''
+      },
+      quantity: item.quantity
+    }));
 
     res.status(200).json({
       message: "Product removed from cart",
-      items: cart.items,
-      totalQuantity,
-      totalAmount
+      cartProducts,
+      totalQuantity: cart.items.reduce((sum, i) => sum + i.quantity, 0),
+      totalAmount: cart.items.reduce((sum, i) => sum + i.quantity * i.product.price, 0)
     });
   } catch (error) {
     console.error("Remove Cart Item Error:", error);
     res.status(500).json({ message: "Failed to remove item", error: error.message });
   }
 };
+
 
 // Clear cart
 const clearCart = async (req, res) => {

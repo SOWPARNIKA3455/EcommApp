@@ -54,15 +54,23 @@ const createProduct = async (req, res) => {
   }
 };
 
-// Get All Products
+// Get All Products (with optional category filter)
 const getAllProducts = async (req, res) => {
   try {
-    const products = await Product.find();
+    const { category } = req.query;
+
+    let query = {};
+    if (category && category !== "all") {
+      query.category = { $regex: new RegExp(`^${category}$`, "i") };
+    }
+
+    const products = await Product.find(query);
     res.status(200).json(products);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch products' });
   }
 };
+
 
 // Get Single Product
 const getProductById = async (req, res) => {

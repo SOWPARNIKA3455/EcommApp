@@ -5,7 +5,7 @@ const authUser = require('../middleware/authUser')
 const authAdmin = require('../middleware/authAdmin')
 //signup
 // /api/user/register
-userRouter.post('/register',register)
+userRouter.post('/signup',register)
 //login
 // /api/user/login
 userRouter.post('/login',login)

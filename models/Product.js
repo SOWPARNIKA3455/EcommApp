@@ -41,15 +41,17 @@ const productSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-sellerId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Seller',
-   
-  },
+
   seller:{
         type: mongoose.Schema.Types.ObjectId,
-ref :'User'
+ref :'User',
+required:true,
   },
+  isVerified: {
+  type: Boolean,
+  default: false
+},
+
 },
   {timestamps: true});
 

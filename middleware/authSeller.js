@@ -2,11 +2,13 @@ const jwt = require('jsonwebtoken');
 
 const authSeller = (req, res, next) => {
   try {
-    const token = req.cookies.token;
+    const authHeader = req.headers.authorization;
 
-    if (!token) {
+    if (!authHeader || !authHeader.startsWith('Bearer')) {
       return res.status(401).json({ error: "Not authorized, token missing" });
     }
+
+    const token = authHeader.split(' ')[1];
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
@@ -17,7 +19,7 @@ const authSeller = (req, res, next) => {
 
     req.user = {
       _id: decoded.id,
-      role: decoded.role
+      role: decoded.role,
     };
 
     console.log("Authenticated seller:", req.user);

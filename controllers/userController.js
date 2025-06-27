@@ -4,7 +4,7 @@ const createToken = require('../utilis/generateToken');
 
 const register = async (req, res, next) => {
   try {
-    const { name, email, password, profilePic } = req.body || {};
+    const { name, email, password, profilePic,role } = req.body || {};
 
     if (!name || !email || !password) {
       return res.status(400).json({ error: "All fields are mandatory" });
@@ -22,6 +22,7 @@ const register = async (req, res, next) => {
       email,
       password: hashedPassword,
       profilePic,
+      role,
     });
 
     const savedUser = await newUser.save();
@@ -56,21 +57,17 @@ const login = async (req, res, next) => {
     if (!isMatch) {
       return res.status(400).json({ error: "Invalid password" });
     }
-    const token = createToken(user._id, 'user');
+    const token = createToken(user._id, user);
     const isProduction = process.env.NODE_ENV === 'production';
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'Strict',
-      maxAge: 24 * 60 * 60 * 1000, 
-    });
+    
 
     const userData = user.toObject();
     delete userData.password;
 
     return res.status(200).json({
-      message: "Login successful",
-      user: userData,
+  message: "Login successful",
+  user: userData,
+  token 
     });
 
   } catch (error) {
@@ -85,16 +82,20 @@ const login = async (req, res, next) => {
 const profile = async (req, res, next) => {
   try {
     const userId = req.user._id;
-    const userData = await User.findById(userId).select("-password");
-    return res.status(200).json({
-      data: userData,
-      message: "Profile retrieved"
-    });
 
+    const userData = await User.findById(userId).select('-password');
+    if (!userData) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({
+      user: userData,
+      message: 'Profile retrieved successfully',
+    });
   } catch (error) {
-    console.error(error);
-    return res.status(error.status || 500).json({
-      error: error.message || "Internal server error"
+    console.error('Error retrieving profile:', error);
+    res.status(500).json({
+      message: 'Internal server error',
     });
   }
 };
@@ -119,10 +120,13 @@ const update = async (req, res, next) => {
     const userId = req.user._id;
     const { name, email, password, profilePic } = req.body || {};
 
-    const updatedFields = { name, email, profilePic };
+    const updatedFields = {};
 
-    if (password) {
-      const bcrypt = require('bcrypt');
+    if (name) updatedFields.name = name;
+    if (email) updatedFields.email = email;
+    if (profilePic) updatedFields.profilePic = profilePic;
+
+    if (password && password.trim().length > 0) {
       const salt = await bcrypt.genSalt(10);
       updatedFields.password = await bcrypt.hash(password, salt);
     }
@@ -130,22 +134,24 @@ const update = async (req, res, next) => {
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { $set: updatedFields },
-      { new: true } 
+      { new: true, runValidators: true }
     ).select('-password');
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
     res.status(200).json({
       data: updatedUser,
-      message: "Profile updated"
+      message: 'Profile updated successfully',
     });
-
   } catch (error) {
-    console.error(error);
+    console.error('Update error:', error);
     res.status(error.status || 500).json({
-      error: error.message || "Internal server error"
+      error: error.message || 'Internal server error',
     });
   }
 };
-
 
 const deleteUser = async (req, res, next) => {
   try {

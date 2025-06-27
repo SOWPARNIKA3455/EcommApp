@@ -1,13 +1,12 @@
-
 const express = require('express');
 const sellerRouter = express.Router();
-const authUser = require('../middleware/authUser')
-const authAdmin = require('../middleware/authAdmin');
+const { protect, authorizeRoles } = require('../middleware/authMiddleware');
 const authSeller = require('../middleware/authSeller');
-
+const authAdmin = require('../middleware/authAdmin');
+const upload = require('../middleware/multer');
 
 const {
- createSellerProfile,
+  createSellerProfile,
   sellerLogin,
   sellerLogout,
   SellerProfile,
@@ -19,25 +18,31 @@ const {
   updateProduct,
   deleteProduct,
   getOrders,
+  getSellerStats,
 } = require('../controllers/sellerController');
-const upload = require('../middleware/multer');
 
-
-sellerRouter.post('/create', authUser, createSellerProfile);
+// Public routes
 sellerRouter.post('/login', sellerLogin);
 sellerRouter.get('/logout', sellerLogout);
+
+// Only logged-in users can become sellers
+sellerRouter.post('/signup', protect, createSellerProfile);
+
+// Seller-only routes
 sellerRouter.use(authSeller);
 
-sellerRouter.get('/profile', authSeller,SellerProfile);
-sellerRouter.patch('/update', authSeller,updateSeller);
-sellerRouter.get('/check-role',authSeller, checkSellerRole);
-sellerRouter.delete('/delete/:userId',authAdmin,deleteSeller)
+sellerRouter.get('/profile', SellerProfile);
+sellerRouter.patch('/update', updateSeller);
+sellerRouter.get('/check-role', checkSellerRole);
+sellerRouter.get('/products',authSeller, getMyProducts);
+sellerRouter.post('/product', upload.single('image'), addProduct);
+sellerRouter.put('/product/:id', upload.single('image'), updateProduct);
+sellerRouter.get('/orders', getOrders);
 
-sellerRouter.post('/product',authSeller,upload.single('image'), addProduct);
-sellerRouter.get('/products', getMyProducts);
-sellerRouter.put('/product/:id', authSeller,upload.single('image'),updateProduct);
-sellerRouter.delete('/product/:id', authAdmin,deleteProduct);
+// Admin-only routes
+sellerRouter.delete('/delete/:userId', authAdmin, deleteSeller);
+sellerRouter.delete('/product/:id', authAdmin, deleteProduct);
 
-sellerRouter.get('/orders', authSeller,getOrders);
+sellerRouter.get('/dashboard-stats', authSeller, getSellerStats);
 
 module.exports = sellerRouter;

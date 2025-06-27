@@ -1,111 +1,108 @@
-const Admin = require('../models/User'); 
+const Admin = require('../models/Admin');
 const bcrypt = require('bcrypt');
 const createToken = require('../utilis/generateToken');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
+const User = require('../models/User');
 
-const adminSignup = async (req, res, next) => {
+// Admin Signup
+const adminSignup = async (req, res) => {
   try {
-    const { name, email, password, profilePic } = req.body || {};
+    const { name, email, password, profilePic } = req.body;
 
     if (!name || !email || !password) {
-      return res.status(400).json({ error: "All fields are mandatory" });
+      return res.status(400).json({ success: false, error: "All fields are mandatory" });
     }
+
     const adminExists = await Admin.findOne({ email });
     if (adminExists) {
-      return res.status(400).json({ error: "Admin already exists" });
+      return res.status(400).json({ success: false, error: "Admin already exists" });
     }
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const newAdmin = new Admin({
       name,
       email,
-      password: hashedPassword,
+      password,
       profilePic,
       role: 'admin',
     });
 
     const savedAdmin = await newAdmin.save();
-
     const adminWithoutPassword = savedAdmin.toObject();
     delete adminWithoutPassword.password;
 
     res.status(201).json({
+      success: true,
       message: "Admin account created",
       admin: adminWithoutPassword,
     });
-
   } catch (error) {
     console.error(error);
-    res.status(error.status || 500).json({
-      error: error.message || "Internal server error"
-    });
+    res.status(500).json({ success: false, error: error.message || "Internal server error" });
   }
 };
 
-const adminLogin = async (req, res, next) => {
+// Admin Login
+const adminLogin = async (req, res) => {
   try {
-    const { email, password } = req.body || {};
+    const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ error: "All fields are mandatory" });
+      return res.status(400).json({ success: false, error: "All fields are mandatory" });
     }
-    const admin = await Admin.findOne({ email, role: 'admin' }).select('+password');
+
+    const admin = await Admin.findOne({ email }).select('+password');
     if (!admin) {
-      return res.status(404).json({ error: "Admin not found" });
+      return res.status(404).json({ success: false, error: "Admin not found" });
     }
 
     const isMatch = await bcrypt.compare(password, admin.password);
     if (!isMatch) {
-      return res.status(400).json({ error: "Invalid password" });
+      return res.status(400).json({ success: false, error: "Invalid password" });
     }
 
-    const token = createToken(admin._id, 'admin');
+    const token = createToken(admin._id, admin.role);
 
-    const isProduction = process.env.NODE_ENV === 'production';
-
-    res.clearCookie('token'); 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: 'Strict',
-      maxAge: 24 * 60 * 60 * 1000, 
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Lax',
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
     });
 
     const adminData = admin.toObject();
     delete adminData.password;
 
-    return res.status(200).json({
+    res.status(200).json({
+      success: true,
       message: "Admin login successful",
-      admin: adminData,
+      user: adminData,
     });
-
   } catch (error) {
     console.error("Admin login error:", error);
-    res.status(error.status || 500).json({
-      error: error.message || "Internal server error"
-    });
+    res.status(500).json({ success: false, error: error.message || "Internal server error" });
   }
 };
 
-const getAdminProfile = async (req, res, next) => {
+// Get Admin Profile
+const getAdminProfile = async (req, res) => {
   try {
     const adminId = req.user?._id;
     const adminData = await Admin.findById(adminId).select('-password');
-    return res.status(200).json({
+    res.status(200).json({
+      success: true,
+      message: "Admin profile retrieved",
       data: adminData,
-      message: "Admin profile retrieved"
     });
   } catch (error) {
-    console.error(error);
-    res.status(error.status || 500).json({
-      error: error.message || "Internal server error"
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
-const adminLogout = async (req, res, next) => {
+// Admin Logout
+const adminLogout = async (req, res) => {
   try {
     res.clearCookie('token');
     res.status(200).json({
@@ -113,22 +110,20 @@ const adminLogout = async (req, res, next) => {
       message: "Admin logged out successfully"
     });
   } catch (error) {
-    console.error(error);
-    res.status(error.status || 500).json({
-      error: error.message || "Internal server error"
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
-const updateAdmin = async (req, res, next) => {
+
+// Update Admin Profile
+const updateAdmin = async (req, res) => {
   try {
     const adminId = req.user._id;
-    const { name, email, password, profilePic } = req.body || {};
+    const { name, email, password, profilePic } = req.body;
 
     const updatedFields = { name, email, profilePic };
 
     if (password) {
-      const salt = await bcrypt.genSalt(10);
-      updatedFields.password = await bcrypt.hash(password, salt);
+      updatedFields.password = await bcrypt.hash(password, 10);
     }
 
     const updatedAdmin = await Admin.findByIdAndUpdate(
@@ -138,138 +133,216 @@ const updateAdmin = async (req, res, next) => {
     ).select('-password');
 
     res.status(200).json({
-      data: updatedAdmin,
-      message: "Admin profile updated"
+      success: true,
+      message: "Admin profile updated",
+      data: updatedAdmin
     });
-
   } catch (error) {
-    console.error(error);
-    res.status(error.status || 500).json({
-      error: error.message || "Internal server error"
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
-const deleteAdmin = async (req, res, next) => {
+
+// Delete Admin
+const deleteAdmin = async (req, res) => {
   try {
     const adminId = req.params.adminId;
 
     if (!adminId) {
-      return res.status(400).json({ error: "Admin ID is required" });
+      return res.status(400).json({ success: false, error: "Admin ID is required" });
+    }
+
+    // Prevent deleting self
+    if (req.user._id.toString() === adminId) {
+      return res.status(400).json({ success: false, error: "Admin cannot delete themselves" });
     }
 
     const deletedAdmin = await Admin.findByIdAndDelete(adminId).select('-password');
 
     if (!deletedAdmin) {
-      return res.status(404).json({ error: "Admin not found" });
+      return res.status(404).json({ success: false, error: "Admin not found" });
     }
 
     res.status(200).json({
-      data: deletedAdmin,
-      message: "Admin deleted successfully"
+      success: true,
+      message: "Admin deleted successfully",
+      data: deletedAdmin
     });
   } catch (error) {
-    console.error(error);
-    res.status(error.status || 500).json({
-      error: error.message || "Internal server error"
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
-const checkAdminRole = async (req, res, next) => {
+
+// Check Admin Role
+const checkAdminRole = async (req, res) => {
   try {
     const user = req.user;
     if (!user || user.role !== 'admin') {
-      return res.status(403).json({ authorized: false, error: "Access denied" });
+      return res.status(403).json({ success: false, authorized: false, error: "Access denied" });
     }
-    res.status(200).json({ role: user.role, authorized: true });
+    res.status(200).json({ success: true, role: user.role, authorized: true });
   } catch (error) {
-    console.error(error);
-    res.status(error.status || 500).json({
-      error: error.message || "Internal server error"
-    });
-  }
-};
-const getAllUsers = async (req, res) => {
-  try {
-    const users = await User.find().select('-password');
-    res.json(users);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch users', error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
-// Get all products
+// Get All Users
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find({}, '-password');
+    res.status(200).json({ success: true, data: users });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch users', error: error.message });
+  }
+};
+
+// Get All Products
 const getAllProducts = async (req, res) => {
   try {
     const products = await Product.find().populate('seller', 'name email');
-    res.json(products);
+    res.status(200).json({ success: true, data: products });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch products', error: error.message });
+    res.status(500).json({ success: false, message: 'Failed to fetch products', error: error.message });
   }
 };
 
-// Get all orders
+// Get All Orders
 const getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find()
       .populate('user', 'name email')
-      .populate('items.product', 'name price');
-    res.json(orders);
+      .populate('orderItems.product', 'name price'); // <-- fix here
+
+    res.status(200).json({ success: true, data: orders });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch orders', error: error.message });
+    console.error('🔥 Error in getAllOrders:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch orders', error: error.message });
   }
 };
 
-// Update order status (e.g., mark as delivered)
+
+// Update Order Status
+// Force mark as delivered
 const updateOrderStatus = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ message: 'Order not found' });
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
 
-    order.isDelivered = req.body.isDelivered ?? order.isDelivered;
-    if (order.isDelivered) order.deliveredAt = new Date();
+    // Directly mark as delivered
+    order.isDelivered = true;
+    order.deliveredAt = new Date();
 
     const updatedOrder = await order.save();
-    res.json(updatedOrder);
+    res.status(200).json({
+      success: true,
+      message: 'Order marked as delivered',
+      data: updatedOrder,
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to update order status', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update order status',
+      error: error.message,
+    });
   }
 };
 
-// Delete user
+
+// Delete User
 const deleteUser = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json({ message: 'User deleted successfully' });
+    const userId = req.params.id;
+    const deletedUser = await User.findByIdAndDelete(userId);
+    if (!deletedUser) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    res.status(200).json({ success: true, message: 'User deleted successfully' });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to delete user', error: error.message });
+    res.status(500).json({ success: false, message: 'Failed to delete user', error: error.message });
   }
 };
 
-// Delete product
+// Delete Product
 const deleteProduct = async (req, res) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
-    if (!product) return res.status(404).json({ message: 'Product not found' });
-    res.json({ message: 'Product deleted successfully' });
+    if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
+    res.status(200).json({ success: true, message: 'Product deleted successfully' });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to delete product', error: error.message });
+    res.status(500).json({ success: false, message: 'Failed to delete product', error: error.message });
   }
-}
-// Verify product
+};
+
+// Verify Product
 const verifyProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ message: 'Product not found' });
+    if (!product)
+      return res.status(404).json({ success: false, message: 'Product not found' });
 
     product.isVerified = true;
     await product.save();
 
-    res.json({ message: 'Product verified successfully' });
+    res.status(200).json({
+      success: true,
+      message: 'Product verified successfully',
+      data: product
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to verify product', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update verification status',
+      error: error.message
+    });
   }
 };
+// controllers/adminController.js
+const getAdminReports = async (req, res) => {
+  try {
+    const paidOrders = await Order.find({ isPaid: true });
+
+    const revenue = paidOrders.reduce((total, order) => {
+      return total + (order.totalPrice || 0);
+    }, 0);
+
+    // Monthly revenue
+    const monthlyData = {};
+    const dailyData = {};
+
+    paidOrders.forEach((order) => {
+      const createdAt = new Date(order.createdAt);
+
+      // Format for monthly (e.g., "Jun 2025")
+      const month = createdAt.toLocaleString('default', { month: 'short', year: 'numeric' });
+      monthlyData[month] = (monthlyData[month] || 0) + (order.totalPrice || 0);
+
+      // Format for daily (e.g., "2025-06-26")
+      const day = createdAt.toISOString().split('T')[0];
+      dailyData[day] = (dailyData[day] || 0) + (order.totalPrice || 0);
+    });
+
+    const monthlyLabels = Object.keys(monthlyData);
+    const monthlyRevenue = Object.values(monthlyData);
+
+    const dailyLabels = Object.keys(dailyData);
+    const dailyRevenue = Object.values(dailyData);
+
+    res.status(200).json({
+      revenue,
+      monthlyLabels,
+      monthlyRevenue,
+      dailyLabels,
+      dailyRevenue,
+    });
+  } catch (error) {
+    console.error('Report generation error:', error);
+    res.status(500).json({ message: 'Failed to generate report' });
+  }
+};
+
+
+
 module.exports = {
   adminSignup,
   adminLogin,
@@ -285,4 +358,5 @@ module.exports = {
   deleteUser,
   deleteProduct,
   verifyProduct,
+  getAdminReports,
 };

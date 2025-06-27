@@ -11,7 +11,8 @@ const {
   deleteProduct,
   deleteUser,
   verifyProduct,
-  updateOrderStatus
+  updateOrderStatus,
+  getAdminReports,
 } = require('../controllers/adminController');
 
 const authAdmin = require('../middleware/authAdmin');
@@ -25,14 +26,14 @@ adminRouter.post('/logout', authAdmin, adminLogout);
 adminRouter.get('/profile', authAdmin, getAdminProfile);
 adminRouter.get('/check-role', authAdmin, checkAdminRole);
 
-adminRouter.put('/verify-product/:id', authAdmin, verifyProduct);
+adminRouter.patch('/verify-product/:id', authAdmin, verifyProduct);
 
 adminRouter.get('/users', authAdmin, getAllUsers);
 adminRouter.delete('/users/:id', authAdmin, deleteUser);
 
 adminRouter.get('/products', authAdmin, getAllProducts);
 adminRouter.delete('/products/:id', authAdmin, deleteProduct);
-
+adminRouter.get('/reports', authAdmin,getAdminReports);
 adminRouter.get('/orders', authAdmin, getAllOrders);
 adminRouter.put('/orders/:id/status', authAdmin, updateOrderStatus);
 

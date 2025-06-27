@@ -7,67 +7,56 @@ const createToken = require('../utilis/generateToken');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 
+const jwt = require('jsonwebtoken'); // Make sure to import this
+
 // Create Seller Profile
+
+
 const createSellerProfile = async (req, res) => {
   try {
     const userId = req.user._id;
 
     const user = await User.findById(userId);
     if (!user || user.role !== 'user') {
-      return res.status(400).json({
-        success: false,
-        error: "Only users can create a seller profile"
-      });
+      return res.status(400).json({ success: false, error: 'Only users can become sellers' });
     }
 
     const existing = await Seller.findOne({ user: userId });
     if (existing) {
-      return res.status(400).json({
-        success: false,
-        error: "Seller profile already exists"
-      });
+      return res.status(400).json({ success: false, error: 'Seller profile already exists' });
     }
 
     const { businessName, gstNumber, address } = req.body;
-    if (!businessName || !gstNumber || !address ) {
-      return res.status(400).json({
-        success: false,
-        error: "All fields are required"
-      });
+    if (!businessName || !gstNumber || !address) {
+      return res.status(400).json({ success: false, error: 'All fields are required' });
     }
 
-    const newSeller = new Seller({
-      user: userId,
-      businessName,
-      gstNumber,
-      address
-    });
+    const seller = await Seller.create({ user: userId, businessName, gstNumber, address });
 
-    const saved = await newSeller.save();
-
-    // Update user role to seller
+    // Update user role and generate token
     user.role = 'seller';
     await user.save();
 
-   const userData = user.toObject();
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET_KEY,
+      { expiresIn: '7d' }
+    );
+
+    const userData = user.toObject();
     delete userData.password;
 
     res.status(201).json({
       success: true,
-      message: "Seller profile created successfully",
-      user: userData,          // updated user details (role = 'seller')
-      seller: saved,     // new seller profile details
-    }); 
+      user: { ...userData, token },
+      seller,
+    });
   } catch (error) {
     console.error(error);
-    res.status(500).json({
-      success: false,
-      error: "Failed to create seller profile"
-    });
+    res.status(500).json({ success: false, error: 'Server error' });
   }
 };
 
-// Seller Login
 const sellerLogin = async (req, res) => {
   try {
     const { email, password } = req.body || {};
@@ -100,16 +89,17 @@ const sellerLogin = async (req, res) => {
     const userData = user.toObject();
     delete userData.password;
 
-    
     return res.status(200).json({
       message: "Seller login successful",
-       seller:userData,     
-     });
+      seller: userData,
+      token, // ✅ Add this line
+    });
   } catch (error) {
     console.error("Seller login error:", error);
     res.status(500).json({ error: error.message || "Internal server error" });
   }
 };
+
 
 // Seller Logout
 const sellerLogout = async (req, res) => {
@@ -202,7 +192,7 @@ const checkSellerRole = async (req, res) => {
 
 const addProduct = async (req, res) => {
   try {
-    const {title, description, price, stock } = req.body;
+    const {title, description, price, stock ,category} = req.body;
 
     if (!req.file) {
       return res.status(400).json({ message: 'No image file uploaded' });
@@ -226,8 +216,9 @@ const addProduct = async (req, res) => {
       description,
       price,
       stock,
+      category,
       imageUrl: result.secure_url,
-      sellerId: req.user._id,  // Assuming auth middleware sets req.user
+      seller: req.user._id,  // Assuming auth middleware sets req.user
     });
 
     await newProduct.save();
@@ -241,16 +232,22 @@ const addProduct = async (req, res) => {
 
 
 
-// Get My Products
 const getMyProducts = async (req, res) => {
   try {
-    const products = await Product.find({ sellerId: req.user._id }).lean();
-    res.json(products);
+    const sellerId = req.user._id;
+
+    const products = await Product.find({ seller: sellerId }).lean(); // ✅ Only your products
+
+    res.json({ products });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: error.message || "Internal server error" });
+    console.error('Fetch error:', error.message);
+    res.status(500).json({ error: error.message });
   }
 };
+
+
+
+
 
 // Update Product
 const updateProduct = async (req, res) => {
@@ -293,32 +290,147 @@ const deleteProduct = async (req, res) => {
     res.status(500).json({ error: error.message || "Internal server error" });
   }
 };
+
 const getOrders = async (req, res) => {
   try {
     
     const orders = await Order.find()
       .populate({
-        path: 'items.product',
+        path: 'orderItems.product',
         model: 'Product',
-        select: 'title sellerId',
-      });
+        select: 'title imageUrl seller',
+      })
+      .populate('user', 'name email');
 
-  
+  console.log("Orders fetched:", orders.length);
+    console.log("req.user._id:", req.user._id);
+
+
+   
     const sellerOrders = orders.filter(order =>
-      order.items.some(item =>
-  item.product?.sellerId?.toString() === req.user._id.toString()
-    )
+      order.orderItems.some(item =>
+        
+        item.product?.seller?.toString() === req.user._id.toString()
+  )
     );
 
+    
     res.json(sellerOrders);
   } catch (error) {
     console.error('Error in getOrders:', error);
-    res.status(500).json({ error: error.message || "Internal server error" });
+    res.status(500).json({ error: error.message || 'Internal server error' });
   }
 };
 
- 
-  
+const getSellerStats = async (req, res) => {
+  try {
+    const sellerId = req.user._id;
+
+    
+    const sellerProducts = await Product.find({ seller: sellerId }).select('_id');
+    const sellerProductIds = sellerProducts.map(p => p._id);
+
+   
+    const orders = await Order.find({
+      'orderItems.product': { $in: sellerProductIds },
+      isPaid: true,
+    });
+
+    
+    let totalRevenue = 0;
+    let pendingOrders = 0;
+    let completedOrders = 0;
+    const recentOrders = [];
+
+    for (let order of orders) {
+      let orderRevenue = 0;
+      for (let item of order.orderItems) {
+       if (sellerProductIds.map(id => id.toString()).includes(item.product.toString())) {
+  orderRevenue += item.price * item.quantity;
+}
+
+      }
+
+      totalRevenue += orderRevenue;
+
+      if (order.isDelivered) completedOrders++;
+      else pendingOrders++;
+
+      recentOrders.push(order);
+    }
+
+    // 3. Daily Revenue
+    const dailyRevenue = await Order.aggregate([
+      {
+        $match: {
+          isPaid: true,
+          'orderItems.product': { $in: sellerProductIds },
+        },
+      },
+      { $unwind: "$orderItems" },
+      {
+        $match: {
+          'orderItems.product': { $in: sellerProductIds },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+          },
+          amount: { $sum: { $multiply: ["$orderItems.price", "$orderItems.quantity"] } },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    // 4. Monthly Revenue
+    const monthlyRevenue = await Order.aggregate([
+      {
+        $match: {
+          isPaid: true,
+          'orderItems.product': { $in: sellerProductIds },
+        },
+      },
+      { $unwind: "$orderItems" },
+      {
+        $match: {
+          'orderItems.product': { $in: sellerProductIds },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m", date: "$createdAt" },
+          },
+          amount: { $sum: { $multiply: ["$orderItems.price", "$orderItems.quantity"] } },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    res.json({
+      sellerId,
+      totalRevenue,
+      pendingOrders,
+      completedOrders,
+      recentOrders: recentOrders.slice(-5).reverse(),
+      dailyRevenueData: dailyRevenue.map(d => ({
+        date: d._id,
+        amount: d.amount,
+      })),
+      monthlyRevenueData: monthlyRevenue.map(d => ({
+        month: d._id,
+        amount: d.amount,
+      })),
+    });
+  } catch (err) {
+    console.error('Dashboard error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch seller dashboard data' });
+  }
+};
+
+
 
 module.exports = {
   createSellerProfile,
@@ -333,4 +445,5 @@ module.exports = {
   updateProduct,
   deleteProduct,
   getOrders,
+  getSellerStats,
 };
