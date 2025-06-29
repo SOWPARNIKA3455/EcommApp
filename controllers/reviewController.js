@@ -3,55 +3,28 @@ const Review = require('../models/Review');
 const Order = require('../models/Order'); 
 
 const addReview = async (req, res) => {
+  const { productId, rating, comment } = req.body;
+
   try {
-    const { product, rating, comment } = req.body;
-    const userId = req.user._id; // From auth middleware
 
-    // 1. Check if the product exists
-    const productExists = await Product.findById(product);
-    if (!productExists) {
-      return res.status(404).json({ message: 'Product not found' });
+    const existingReview = await Review.findOne({ user: req.user._id, product: productId });
+    if (existingReview) {
+      return res.status(400).json({ message: 'You have already reviewed this product' });
     }
 
-    // 2. Check if the user purchased this product
-    const order = await Order.findOne({
-      user: userId,
-      'orderItems.product': product,
-    });
-
-    if (!order) {
-      return res.status(400).json({
-        message: 'Only customers who purchased this product can review it.',
-      });
-    }
-
-    // 3. Check if the user has already reviewed this product
-    const alreadyReviewed = await Review.findOne({ product, user: userId });
-    if (alreadyReviewed) {
-      return res.status(400).json({
-        message: 'You have already reviewed this product.',
-      });
-    }
-
-    // 4. Create and save the review
-    const review = await Review.create({
-      product,
-      user: userId,
+    const review = new Review({
+      user: req.user._id,
+      product: productId,
       rating,
       comment,
     });
 
-    res.status(201).json({
-      message: 'Review added successfully',
-      review,
-    });
+    await review.save();
+    res.status(201).json(review);
   } catch (error) {
-    console.error('Add review error:', error.message);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Failed to add review', error: error.message });
   }
 };
-
-
 // Get all reviews for a product
 const getProductReviews = async (req, res) => {
   try {

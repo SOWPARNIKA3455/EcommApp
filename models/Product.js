@@ -28,7 +28,7 @@ const productSchema = new mongoose.Schema({
   stock: {
     type: Number,
     required: [true, 'Stock is required'],
-    min: 0
+    default: 0
   },
   imageUrl: {
     type: String,
@@ -51,6 +51,7 @@ required:true,
   type: Boolean,
   default: false
 },
+ 
 
 },
   {timestamps: true});

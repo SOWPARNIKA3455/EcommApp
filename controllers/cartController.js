@@ -33,6 +33,9 @@ const addToCart = async (req, res) => {
     item: updatedItem,
   });
 };
+
+
+
 const getCart = async (req, res) => {
   try {
     const cart = await Cart.findOne({ user: req.user._id }).populate('items.product');
@@ -99,7 +102,7 @@ const updateCartItem = async (req, res) => {
       return {
         product: {
           _id: product._id,
-          name: product.title || 'Unnamed',
+          title: product.title || 'Unnamed',
           price: product.price || 0,
           imageUrl: product.imageUrl || ''
         },
@@ -149,7 +152,7 @@ const removeCartItem = async (req, res) => {
     const cartProducts = cart.items.map(item => ({
       product: {
         _id: item.product._id,
-        name: item.product.title || 'Unnamed',
+        title: item.product.title || 'Unnamed',
         price: item.product.price || 0,
         imageUrl: item.product.imageUrl || ''
       },

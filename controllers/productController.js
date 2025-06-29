@@ -128,10 +128,24 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+
+const getBestsellers = async (req, res) => {
+  try {
+    const bestsellers = await Product.find().sort({ sold: -1 }).limit(10);
+    res.json(bestsellers);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch bestsellers", error });
+  }
+};
+
+
+
 module.exports = {
   createProduct,
   getAllProducts,
   getProductById,
   updateProduct,
-  deleteProduct
+  deleteProduct,
+  getBestsellers,
+ 
 };

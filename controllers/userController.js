@@ -115,40 +115,53 @@ const logout = async (req, res, next) => {
   }
 };
 
-const update = async (req, res, next) => {
+const update = async (req, res) => {
   try {
     const userId = req.user._id;
     const { name, email, password, profilePic } = req.body || {};
-
     const updatedFields = {};
 
+    // ✅ Name
     if (name) updatedFields.name = name;
-    if (email) updatedFields.email = email;
+
+    // ✅ Email – check if already in use by someone else
+    if (email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser && existingUser._id.toString() !== userId.toString()) {
+        return res.status(400).json({ error: 'Email is already in use' });
+      }
+      updatedFields.email = email;
+    }
+
+    // ✅ Profile Pic URL (already uploaded to Cloudinary on frontend)
     if (profilePic) updatedFields.profilePic = profilePic;
 
+    // ✅ Password (if changed)
     if (password && password.trim().length > 0) {
       const salt = await bcrypt.genSalt(10);
       updatedFields.password = await bcrypt.hash(password, salt);
     }
 
+    // ✅ Update in DB
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { $set: updatedFields },
       { new: true, runValidators: true }
-    ).select('-password');
+    ).select('-password'); // don’t return password
 
     if (!updatedUser) {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    // ✅ Send updated user back
     res.status(200).json({
       data: updatedUser,
       message: 'Profile updated successfully',
     });
   } catch (error) {
     console.error('Update error:', error);
-    res.status(error.status || 500).json({
-      error: error.message || 'Internal server error',
+    res.status(500).json({
+      error: 'Internal server error',
     });
   }
 };

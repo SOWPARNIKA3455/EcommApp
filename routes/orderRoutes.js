@@ -12,7 +12,7 @@ orderRouter.get('/user/:userId', protect,orderController.getUserOrders);
 orderRouter.get('/', orderController.getAllOrders);
 
 // Mark order as delivered
-orderRouter.put('/deliver/:id', orderController.markAsDelivered);
+orderRouter.put('/deliver/:orderId', orderController.markProductDelivered);
 
 // Delete order
 orderRouter.delete('/:id',protect, orderController.deleteOrder);

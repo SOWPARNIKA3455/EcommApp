@@ -5,7 +5,9 @@ createProduct,
   getAllProducts,
   getProductById,
   updateProduct,
-  deleteProduct
+  deleteProduct,
+  getBestsellers,
+
 } = require('../controllers/productController');
 
 const authUser = require('../middleware/authUser');
@@ -14,6 +16,8 @@ const { protect, authorizeRoles } = require('../middleware/authMiddleware');
 productRouter.post('/', protect, authorizeRoles('admin', 'seller'), upload.array('images', 5), createProduct);
 
 productRouter.get('/', getAllProducts);
+
+
 productRouter.get('/:productId', getProductById);
 productRouter.patch('/:productId', authUser, upload.array('images'), updateProduct);
 productRouter.delete('/:productId', authUser, deleteProduct);

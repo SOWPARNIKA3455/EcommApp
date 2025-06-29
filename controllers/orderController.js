@@ -1,5 +1,6 @@
 const Order = require('../models/Order');
 const { updateOrderStatus } = require('./adminController');
+const Product = require('../models/Product');
 
 // Create a new order
 
@@ -47,6 +48,7 @@ const placeOrder = async (req, res) => {
 
     const savedOrder = await newOrder.save();
 
+     
     res.status(201).json({
       message: 'Order placed successfully',
       order: savedOrder
@@ -103,23 +105,30 @@ const getAllOrders = async (req, res) => {
   }
 };
 
-
-// Update delivery status
-const markAsDelivered = async (req, res) => {
+const markProductDelivered = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id);
-
+    const orderId = req.params.orderId;
+    const order = await Order.findById(orderId);
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
     order.isDelivered = true;
     order.deliveredAt = new Date();
 
+    // Set delivered: true on all products
+   
+     order.orderItems = order.orderItems.map(item => ({
+      ...item,
+      delivered: true,
+    }));
+
     const updatedOrder = await order.save();
     res.json(updatedOrder);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to update delivery status', error: error.message });
+    res.status(500).json({ message: 'Failed to update delivery status' });
   }
 };
+
+
 
 // Delete an order by ID
 const deleteOrder = async (req, res) => {
@@ -164,6 +173,7 @@ const createCODOrder = async (req, res) => {
       isDelivered: false,
     });
 
+  
     res.status(201).json({ message: 'COD Order placed successfully', order: newOrder });
   } catch (err) {
     console.error('COD order error:', err.message);
@@ -175,4 +185,4 @@ const createCODOrder = async (req, res) => {
 
 
 
-module.exports ={placeOrder,getAllOrders,getUserOrders,markAsDelivered,deleteOrder,createCODOrder}
+module.exports ={placeOrder,getAllOrders,getUserOrders,markProductDelivered,deleteOrder,createCODOrder}

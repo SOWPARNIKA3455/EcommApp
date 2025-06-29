@@ -2,20 +2,17 @@ const jwt = require('jsonwebtoken');
 
 const authUser = (req, res, next) => {
   try {
-    const authHeader = req.headers['authorization'];
+    // ✅ Try to get token from cookie first, fallback to Authorization header
+    const token = req.cookies?.token || (req.headers.authorization?.startsWith('Bearer ') && req.headers.authorization.split(' ')[1]);
 
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Not authorized, token missing or malformed' });
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized: No token provided' });
     }
 
-   
-    const token = authHeader.split(' ')[1];
-
-   
+    // ✅ Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
-    
+    // ✅ Attach user data to req
     req.user = {
       _id: decoded.id,
       role: decoded.role || 'user',
