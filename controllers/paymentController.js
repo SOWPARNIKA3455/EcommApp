@@ -73,8 +73,8 @@ const createCheckoutSession = async (req, res) => {
       payment_method_types: ['card'],
       line_items,
       mode: 'payment',
-      success_url: `http://localhost:5173/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `http://localhost:5173/payment-cancel`,
+      success_url: 'https://ecomm-client-p0m5.onrender.com/payment-success?session_id={CHECKOUT_SESSION_ID}',
+  cancel_url: 'https://ecomm-client-p0m5.onrender.com/payment-cancelled',
     });
 
    
