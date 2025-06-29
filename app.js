@@ -15,7 +15,7 @@ console.log('JWT_SECRET :', process.env.JWT_SECRET_KEY);
 
 const clientUrl =process.env.CLIENT_DOMAIN
 app.use(cors({
-  origin: clientUrl,
+  origin: "https://ecomm-client-p0m5.onrender.com",
 credentials: true ,
 }));
 
