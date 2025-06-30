@@ -1,10 +1,11 @@
+// controllers/wishlistController.js
 const User = require('../models/User');
 const Product = require('../models/Product');
 
 // Add to wishlist
 exports.addToWishlist = async (req, res) => {
   const { productId } = req.body;
-  const userId = req.user._id;
+  const userId = req.user.id;
 
   try {
     const user = await User.findById(userId);
@@ -21,7 +22,7 @@ exports.addToWishlist = async (req, res) => {
 // Remove from wishlist
 exports.removeFromWishlist = async (req, res) => {
   const { productId } = req.params;
-  const userId = req.user._id;
+  const userId = req.user.id;
 
   try {
     const user = await User.findById(userId);
@@ -36,7 +37,7 @@ exports.removeFromWishlist = async (req, res) => {
 // Get wishlist
 exports.getWishlist = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).populate('wishlist');
+    const user = await User.findById(req.user.id).populate('wishlist');
     res.status(200).json(user.wishlist);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch wishlist' });

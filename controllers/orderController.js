@@ -63,19 +63,24 @@ const placeOrder = async (req, res) => {
 
 const getUserOrders = async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.params.userId;
+
+    // Optional: restrict to own orders only
+    if (req.user._id.toString() !== userId) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
 
     const orders = await Order.find({ user: userId })
       .populate('orderItems.product', 'title price imageUrl');
 
-    return res.status(200).json({
-      message: "User orders fetched successfully",
+    res.json({
+      message: 'User orders fetched successfully',
       orders,
     });
   } catch (error) {
-    console.error("Order fetch error:", error);
+    console.error('Order fetch error:', error);
     res.status(500).json({
-      message: "Failed to get user orders",
+      message: 'Failed to get user orders',
       error: error.message,
     });
   }
