@@ -6,7 +6,7 @@ const { protect } = require('../middleware/authMiddleware');
 orderRouter.post('/',protect, orderController.placeOrder);
 
 // Get user orders
-orderRouter.get('/user/:userId', protect,orderController.getUserOrders);
+orderRouter.get('/user/:userId', authUser,orderController.getUserOrders);
 
 // Get all orders (admin)
 orderRouter.get('/', orderController.getAllOrders);
