@@ -76,7 +76,7 @@ const getUserOrders = async (req, res) => {
     }
 
     const orders = await Order.find({ user: userId })
-      .populate('orderItems.product', 'title price imageUrl');
+      .populate('orderItems.product', 'name price image');
 
     res.status(200).json({
       message: 'User orders fetched successfully',
