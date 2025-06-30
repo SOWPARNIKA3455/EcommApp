@@ -1,6 +1,4 @@
 const Order = require('../models/Order');
-const mongoose = require('mongoose');
-
 const { updateOrderStatus } = require('./adminController');
 const Product = require('../models/Product');
 
@@ -65,29 +63,19 @@ const placeOrder = async (req, res) => {
 
 const getUserOrders = async (req, res) => {
   try {
-    const userId = req.params.userId;
-
-    // Validate userId format
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
-    }
-
-    // Restrict to current user only
-    if (req.user._id.toString() !== userId) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
+    const userId = req.user._id;
 
     const orders = await Order.find({ user: userId })
       .populate('orderItems.product', 'title price imageUrl');
 
-    res.status(200).json({
-      message: 'User orders fetched successfully',
+    return res.status(200).json({
+      message: "User orders fetched successfully",
       orders,
     });
   } catch (error) {
-    console.error('Order fetch error:', error);
+    console.error("Order fetch error:", error);
     res.status(500).json({
-      message: 'Failed to get user orders',
+      message: "Failed to get user orders",
       error: error.message,
     });
   }

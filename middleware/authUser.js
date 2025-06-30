@@ -15,10 +15,9 @@ const authUser = (req, res, next) => {
     // ✅ Attach user data to req
     req.user = {
       _id: decoded.id,
-      role: decoded.role || 'user',
+      role: decoded.role 
     };
 
-    console.log('Authenticated user:', req.user);
     next();
   } catch (error) {
     console.error('JWT error:', error.message);
