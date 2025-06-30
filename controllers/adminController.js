@@ -63,7 +63,7 @@ const adminLogin = async (req, res) => {
       return res.status(400).json({ success: false, error: "Invalid password" });
     }
 
-    const token = createToken(admin._id, admin.role);
+    const token = createToken(admin._id, admin);
 
     res.cookie('token', token, {
       httpOnly: true,
