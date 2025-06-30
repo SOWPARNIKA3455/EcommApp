@@ -15,7 +15,8 @@ const authUser = (req, res, next) => {
     // ✅ Attach user data to req
     req.user = {
       _id: decoded.id,
-      role: decoded.role 
+      id: decoded.id,
+      role: decoded.role ||'user',
     };
 
     next();
