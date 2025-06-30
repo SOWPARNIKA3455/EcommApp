@@ -65,7 +65,12 @@ const getUserOrders = async (req, res) => {
   try {
     const userId = req.params.userId;
 
-    // Optional: restrict to own orders only
+    // Validate userId format
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
+    // Restrict to current user only
     if (req.user._id.toString() !== userId) {
       return res.status(403).json({ message: 'Access denied' });
     }
@@ -73,7 +78,7 @@ const getUserOrders = async (req, res) => {
     const orders = await Order.find({ user: userId })
       .populate('orderItems.product', 'title price imageUrl');
 
-    res.json({
+    res.status(200).json({
       message: 'User orders fetched successfully',
       orders,
     });
